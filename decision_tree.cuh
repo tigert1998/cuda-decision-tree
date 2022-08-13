@@ -62,7 +62,7 @@ __global__ void ConstructDecisionTree(
       for (int i = 0; i < vector_length; i++) {
         float sum = 0, sq_sum = 0;
         for (int j = l; j < r; j++) {
-          data_ptr[j] = samples_ptr[indices[j] * vector_length + j];
+          data_ptr[j] = samples_ptr[indices_ptr[j] * vector_length + j];
           tmp_indices_ptr[j] = j;
           sum += (float)data_ptr[j];
           sq_sum += (float)data_ptr[j] * (float)data_ptr[j];
@@ -98,7 +98,7 @@ __global__ void ConstructDecisionTree(
   }
 
   for (int i = 0; i < 1 << dt_depth; i++) {
-    bins_ptr[i] = targets_ptr[l_ptr[i]];
+    bins_ptr[i] = targets_ptr[indices_ptr[l_ptr[i]]];
   }
 }
 
