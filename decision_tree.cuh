@@ -16,12 +16,18 @@ __global__ void ConstructDecisionTree(
   if (codebook_idx >= num_codebooks) return;
 
   extern __shared__ char buffer[];
-  int* indices = buffer;      // C x N
-  int* tmp_indices = buffer;  // C x N
-  int* new_indices = buffer;  // C x N
-  T* data = buffer;           // C x N
-  int* l_arr = buffer;        // C x (2 ^ dt_depth)
-  int* new_l_arr = buffer;    // C x (2 ^ dt_depth)
+  int offset = 0;
+  int* indices = (int*)(buffer + offset);               // C x N
+  offset += num_codebooks * num_samples * sizeof(int);  //
+  int* tmp_indices = (int*)(buffer + offset);           // C x N
+  offset += num_codebooks * num_samples * sizeof(int);  //
+  int* new_indices = (int*)(buffer + offset);           // C x N
+  offset += num_codebooks * num_samples * sizeof(int);  //
+  T* data = (T*)(buffer + offset);                      // C x N
+  offset += num_codebooks * num_samples * sizeof(T);    //
+  int* l_arr = (int*)(buffer + offset);                 // C x (2 ^ dt_depth)
+  offset += num_codebooks * (1 << dt_depth) * sizeof(int);  //
+  int* new_l_arr = (int*)(buffer + offset);  // C x (2 ^ dt_depth)
 
   int* indices_ptr = indices + codebook_idx * num_samples;
   int* new_indices_ptr = new_indices + codebook_idx * num_samples;
@@ -30,8 +36,8 @@ __global__ void ConstructDecisionTree(
   int* l_ptr = l_arr + codebook_idx * (1 << dt_depth);
   int* new_l_ptr = new_l_arr + codebook_idx * (1 << dt_depth);
 
-  T* samples_ptr = samples + codebook_idx * num_samples * vector_length;
-  B* targets_ptr = targets + codebook_idx * num_samples;
+  const T* samples_ptr = samples + codebook_idx * num_samples * vector_length;
+  const B* targets_ptr = targets + codebook_idx * num_samples;
   D* dims_ptr = dims + codebook_idx * ((1 << dt_depth) - 1);
   T* vals_ptr = vals + codebook_idx * ((1 << dt_depth) - 1);
   B* bins_ptr = bins + codebook_idx * (1 << dt_depth);
@@ -53,10 +59,10 @@ __global__ void ConstructDecisionTree(
       }
 
       float max_var = -1;
-      for (int i = 0; i < vector_size; i++) {
+      for (int i = 0; i < vector_length; i++) {
         float sum = 0, sq_sum = 0;
         for (int j = l; j < r; j++) {
-          data_ptr[j] = samples_ptr[indices[j] * vector_size + j];
+          data_ptr[j] = samples_ptr[indices[j] * vector_length + j];
           tmp_indices_ptr[j] = j;
           sum += (float)data_ptr[j];
           sq_sum += (float)data_ptr[j] * (float)data_ptr[j];
@@ -79,7 +85,7 @@ __global__ void ConstructDecisionTree(
         int j;
         for (j = l; j < r && data_ptr[j] <= vals_ptr[dim_idx]; j++)
           ;
-        new_l_ptr[bin_idx * 2 + 1] = j - 1;
+        new_l_ptr[bin_idx * 2 + 1] = j;
         thrust::copy(thrust::device, tmp_indices_ptr + l, tmp_indices_ptr + r,
                      new_indices_ptr + l);
       }
@@ -89,6 +95,10 @@ __global__ void ConstructDecisionTree(
     }
 
     thrust::copy(thrust::device, new_l_ptr, new_l_ptr + num_samples, l_ptr);
+  }
+
+  for (int i = 0; i < 1 << dt_depth; i++) {
+    bins_ptr[i] = targets_ptr[l_ptr[i]];
   }
 }
 
