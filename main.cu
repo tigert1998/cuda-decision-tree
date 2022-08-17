@@ -2,6 +2,14 @@
 
 #include "decision_tree.cuh"
 
+void AssertCudaCorrect() {
+  auto err = cudaGetLastError();
+  if (err != cudaSuccess) {
+    printf("%s\n", cudaGetErrorString(err));
+    exit(1);
+  }
+}
+
 int main() {
   int8_t* samples_ptr;
   int8_t* targets_ptr;
@@ -25,7 +33,7 @@ int main() {
   for (int i = 0; i < targets.size(); i++) {
     int x;
     std::cin >> x;
-    targets[i] = i;
+    targets[i] = x;
   }
 
   cudaMalloc(&samples_ptr, num_codebooks * num_samples * vector_length);
@@ -39,9 +47,13 @@ int main() {
   cudaMemcpy(targets_ptr, targets.data(), targets.size(),
              cudaMemcpyHostToDevice);
 
+  AssertCudaCorrect();
+
   ConstructDecisionTree<int8_t, int8_t, int8_t><<<num_codebooks, 1>>>(
       num_codebooks, num_samples, vector_length, num_targets, dt_depth,
       samples_ptr, targets_ptr, dims_ptr, vals_ptr, bins_ptr);
+
+  AssertCudaCorrect();
 
   std::vector<int8_t> dims(num_codebooks * ((1 << dt_depth) - 1)),
       vals(num_codebooks * ((1 << dt_depth) - 1)),
