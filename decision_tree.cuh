@@ -117,7 +117,7 @@ __global__ void ConstructDecisionTree(
                    indices_ptr + l);
     }
 
-    thrust::copy(thrust::device, new_l_ptr, new_l_ptr + num_samples, l_ptr);
+    thrust::copy(thrust::device, new_l_ptr, new_l_ptr + (1 << dt_depth), l_ptr);
   }
 
   for (int i = 0; i < 1 << dt_depth; i++) {
