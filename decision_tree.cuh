@@ -62,8 +62,8 @@ __global__ void ConstructDecisionTree(
       for (int i = 0; i < vector_length; i++) {
         float sum = 0, sq_sum = 0;
         for (int j = l; j < r; j++) {
-          data_ptr[j] = samples_ptr[indices_ptr[j] * vector_length + j];
-          tmp_indices_ptr[j] = j;
+          data_ptr[j] = samples_ptr[indices_ptr[j] * vector_length + i];
+          tmp_indices_ptr[j] = indices_ptr[j];
           sum += (float)data_ptr[j];
           sq_sum += (float)data_ptr[j] * (float)data_ptr[j];
         }
