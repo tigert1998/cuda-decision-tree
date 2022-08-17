@@ -9,9 +9,10 @@ int main() {
   int8_t* vals_ptr;
   int8_t* bins_ptr;
 
-  int num_codebooks, num_samples, vector_length, dt_depth;
+  int num_codebooks, num_samples, vector_length, num_targets, dt_depth;
 
-  std::cin >> num_codebooks >> num_samples >> vector_length >> dt_depth;
+  std::cin >> num_codebooks >> num_samples >> vector_length >> num_targets >>
+      dt_depth;
 
   std::vector<int8_t> samples(num_codebooks * num_samples * vector_length);
   std::vector<int8_t> targets(num_codebooks * num_samples);
@@ -38,13 +39,9 @@ int main() {
   cudaMemcpy(targets_ptr, targets.data(), targets.size(),
              cudaMemcpyHostToDevice);
 
-  int shared_memory_size = num_codebooks * num_samples * 3 * sizeof(int) +
-                           num_codebooks * num_samples * sizeof(int8_t) +
-                           num_codebooks * (1 << dt_depth) * 2 * sizeof(int);
-  ConstructDecisionTree<int8_t, int8_t, int8_t>
-      <<<num_codebooks, 1, shared_memory_size>>>(
-          num_codebooks, num_samples, vector_length, dt_depth, samples_ptr,
-          targets_ptr, dims_ptr, vals_ptr, bins_ptr);
+  ConstructDecisionTree<int8_t, int8_t, int8_t><<<num_codebooks, 1>>>(
+      num_codebooks, num_samples, vector_length, num_targets, dt_depth,
+      samples_ptr, targets_ptr, dims_ptr, vals_ptr, bins_ptr);
 
   std::vector<int8_t> dims(num_codebooks * ((1 << dt_depth) - 1)),
       vals(num_codebooks * ((1 << dt_depth) - 1)),
