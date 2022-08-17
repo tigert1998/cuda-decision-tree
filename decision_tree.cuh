@@ -43,8 +43,9 @@ __device__ float SelectBestSplit(int32_t l, int32_t r, int32_t dim,
       r_gini -= p * p;
     }
 
-    if (l_gini + r_gini < min_gini) {
-      min_gini = l_gini + r_gini;
+    float tot_gini = ((i - l + 1) * l_gini + (r - 1 - i) * r_gini) / (r - l);
+    if (tot_gini < min_gini) {
+      min_gini = tot_gini;
       *split = i + 1;
     }
   }
@@ -103,7 +104,7 @@ __global__ void ConstructDecisionTree(
             indices_ptr, data_ptr, tmp_indices_ptr, l_targets_cnt_ptr,
             r_targets_cnt_ptr, &split);
         if (gini >= min_gini) continue;
-
+        min_gini = gini;
         dims_ptr[dim_idx] = i;
         new_l_ptr[bin_idx * 2] = l;
         new_l_ptr[bin_idx * 2 + 1] = split;
