@@ -33,6 +33,8 @@ __device__ float SelectBestSplit(int32_t l, int32_t r, int32_t dim,
     l_targets_cnt_ptr[targets_ptr[tmp_indices_ptr[i]]]++;
     r_targets_cnt_ptr[targets_ptr[tmp_indices_ptr[i]]]--;
 
+    if (data_ptr[i + 1] == data_ptr[i]) continue;
+
     float l_gini = 1, r_gini = 1;
     for (int j = 0; j < num_targets; j++) {
       float p = l_targets_cnt_ptr[j] * 1.0 / (i - l + 1);
@@ -126,7 +128,7 @@ __global__ void ConstructDecisionTree(
     int r = i + 1 == (1 << dt_depth) ? num_samples : l_ptr[i + 1];
 
     if (l == r) {
-      bins_ptr[i] = targets_ptr[indices_ptr[l]];
+      bins_ptr[i] = bins_ptr[i - 1];
     } else {
       thrust::fill(thrust::device, l_targets_cnt_ptr,
                    l_targets_cnt_ptr + num_targets, 0);
