@@ -91,7 +91,7 @@ __global__ void ConstructDecisionTree(
       int r =
           bin_idx + 1 == (1 << depth_idx) ? num_samples : l_ptr[bin_idx + 1];
       int dim_idx = (1 << depth_idx) - 1 + bin_idx;
-      if (r - l <= 1) {
+      if (r - l <= 1 || dims_ptr[(dim_idx - 1) / 2] < 0) {
         dims_ptr[dim_idx] = -1;
         new_l_ptr[bin_idx * 2] = l;
         new_l_ptr[bin_idx * 2 + 1] = r;
@@ -114,6 +114,13 @@ __global__ void ConstructDecisionTree(
             floor((data_ptr[split - 1] + data_ptr[split]) / 2.0);
         thrust::copy(thrust::device, tmp_indices_ptr + l, tmp_indices_ptr + r,
                      new_indices_ptr + l);
+      }
+
+      if (min_gini >= 1e9) {
+        dims_ptr[dim_idx] = -1;
+        new_l_ptr[bin_idx * 2] = l;
+        new_l_ptr[bin_idx * 2 + 1] = r;
+        continue;
       }
 
       thrust::copy(thrust::device, new_indices_ptr + l, new_indices_ptr + r,
