@@ -36,6 +36,8 @@ int main() {
     targets[i] = x;
   }
 
+  cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1 << 30);
+
   cudaMalloc(&samples_ptr, num_codebooks * num_samples * vector_length);
   cudaMalloc(&targets_ptr, num_codebooks * num_samples);
   cudaMalloc(&dims_ptr, num_codebooks * ((1 << dt_depth) - 1));
